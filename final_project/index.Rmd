@@ -47,7 +47,7 @@ Cleaning data steps:
 
 We have already imported our data, so let's go ahead and clean it!
 
-```{r}
+```{}
 library(tidyverse)
 library(broom)
 library(dplyr)
