@@ -1,0 +1,121 @@
+---
+title: "final_project"
+output: html_document
+date: "2025-04-01"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+library(tidyverse)
+library(dplyr)
+library(stringr)
+library(easystats)
+library(equatiomatic)
+library(pander)
+library(broom)
+library(kableExtra)
+
+dat <- read.csv("plate_reading_2.csv")
+```
+
+
+
+```
+
+
+## This is where we will take a look at the TC50 value of cancerous kidney cells from monkeys based off of different chemicals added. 
+### The chemicals used were water, ethanol, and hydrogen peroxide. 
+Water was used to ensure that it wasn't only the diluting of media that was causing cell death. Diluting media with water casues cells to not have as much nutrients so there is some expected cell death. Methanol and Hydrogen peroxide are often used in the lab setting as setilizing reagents, so we were curious to see what the effect on eukaryotic cells are. The standard which are the two first wells are to create a standard curve of "cell death" to compare the results to because the cell numbers within the ethanol and hydrogen peroxide all had 12,000 cells to see what the affect of the reagents were. 
+
+# So let's take a look at the data! 
+
+```{r}
+dat %>% glimpse
+
+
+```
+Looking at this data it is a little messy so we need to clean it up in order to properly perform any type of analysis on it! So what are the steps of cleaning data, well here they are!!
+##Cleaning data!
+
+Cleaning data steps: 
+
+1. Import 
+2. Clean
+3. Visualize
+4. Model
+5. Report 
+
+We have already imported our data, so let's go ahead and clean it!
+
+```{r}
+library(tidyverse)
+library(broom)
+library(dplyr)
+
+dat <- read.csv("plate_reading_2.csv")
+names(dat)
+
+dat %>% 
+  rename_with(~ sub("//.//d+$", "", .), everything())
+
+dat_1 <- dat %>% 
+  rename_with(~ sub("//.//d+$", "", .x)) %>%
+  pivot_longer(cols = c("Cell_count", "Cell_count.1", "Cell_count.2", 
+                        "Cell_count.3", "Cell_count.4", "Cell_count.5", 
+                        "Cell_count.6", "Cell_count.7"), 
+               names_to = "Measurement", 
+               values_to = "cell_count")
+
+dat_2 <- dat_1 %>% 
+  rename_with(~ sub("//.//d+$", "", .x)) %>%
+  pivot_longer(cols = c("standard", "standard.1", "water", "water.1", 
+                        "ethanol", "ethanol.1", "hydrogen_peroxide", 
+                        "hydrogen_peroxide.1"), 
+               names_to = "reagent", 
+               values_to = "absorbance")
+
+dat_3 <- dat_2 %>% 
+  pivot_longer(cols = c("Concentration", "Concentration.1", 
+                        "Concentration.2", "Concentration.3", 
+                        "Concentration.4", "Concentration.5"), 
+               names_to = "concentration.1", 
+               values_to = "concentration")
+
+dat_cleaned <- dat_3 %>% 
+  select("Well", 
+         "cell_count", 
+         "reagent", 
+         "absorbance", 
+         "concentration")
+
+
+dat_cleaned %>% 
+  kable %>%
+  kable_classic(lightable_options = "hover")
+
+
+
+```
+
+now that we cleaned the data up we can now visualize the data!
+
+#Visualize 
+
+```{r}
+dat_cleaned %>% 
+  ggplot(aes(x = reagent, 
+             y = absorbance, 
+             color = concentration)) + 
+  geom_point() + 
+  theme_minimal()
+```
+
+```
+
+
+```
+
+
+
+
+
