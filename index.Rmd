@@ -9,11 +9,22 @@ output:
 date: "`r Sys.Date()`"
 
 ---
+```{r echo=FALSE,  out.width="20%", fig.align="center"}
+
+knitr::include_graphics("JGG07854.JPG")
+
+
+```
+
+
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
 Hello! This is my webpage where you will be able to find info about me! Taylor Wooten, and have access to reports I've done bla bla bla, this is a test
+
+
+[Final_Project](http://twoot04.github.io/final_project/)
 
 
