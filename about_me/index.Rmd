@@ -1,6 +1,9 @@
 ---
-title: "Website"
-output: html_document
+title: "Taylor Wooten's info page"
+output: 
+  prettydoc::html_pretty:
+    theme: hpstr
+    toc: yes
 date: "`r Sys.Date()`"
 ---
 
@@ -10,8 +13,7 @@ knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
 
 
 ```
-
-## This is where you can find info about me!
+This is where you can find info about me!
 
 
 

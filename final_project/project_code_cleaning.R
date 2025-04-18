@@ -5,8 +5,7 @@ library(dplyr)
 dat <- read.csv("plate_reading_2.csv")
 names(dat)
 
-dat %>% 
-  rename_with(~ sub("//.//d+$", "", .), everything())
+
 
 dat_1 <- dat %>% 
   rename_with(~ sub("//.//d+$", "", .x)) %>%
@@ -38,6 +37,8 @@ dat_cleaned <- dat_3 %>%
          "absorbance", 
          "concentration")
 
+
+?kable_styling
 
 dat_cleaned %>% 
   ggplot(aes(x = reagent, 

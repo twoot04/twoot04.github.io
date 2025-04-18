@@ -1,8 +1,13 @@
 ---
-title: "Website"
-output: html_document
+title: "Taylor Wooten's info page"
+author: "Taylor Wooten"
+output: 
+  prettydoc::html_pretty:
+    theme: hpstr
+    toc: yes
+
 date: "`r Sys.Date()`"
-runtime: shiny
+
 ---
 
 ```{r setup, include=FALSE}
