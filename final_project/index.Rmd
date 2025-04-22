@@ -1,15 +1,15 @@
 ---
 title: "Final Project"
 author: "Taylor Wooten" 
-date: "`r Sys.Date()`" 
+date: "22 Apr 2025" 
 output: 
   html_document:
     code_folding: hide
     theme: journal
-    runtime: shiny
     toc: true
     toc_float: true
     number_sections: true
+runtime: shiny
 ---
 ```{r  out.width="20%", fig.align="center"}
 knitr::include_graphics("IMG_0667.JPG")
@@ -17,12 +17,18 @@ knitr::include_graphics("IMG_0667.JPG")
 
 
 ```{r}
+# Set chunk options to hide warnings, messages, and errors
 knitr::opts_chunk$set(
   warning = FALSE,
   message = FALSE,
   error = FALSE,   # <- This hides error messages too
   include = TRUE
 )
+
+```
+
+
+```{r}
 library(tidyverse)
 library(dplyr)
 library(stringr)
