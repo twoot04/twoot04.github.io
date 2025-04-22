@@ -1,18 +1,26 @@
 ---
 title: "final_project"
 author: "Taylor Wooten" 
-date: "r Sys.Date()" 
+date: "`r Sys.Date()`" 
 output: 
   html_document:
     code_folding: hide
-    theme: journal
-    toc: yes
-    toc_depth: 4
-    toc_float: true
+    theme: united
+runtime: shiny
 ---
+```{r echo=FALSE,  out.width="20%", fig.align="center"}
+knitr::include_graphics("IMG_0667.JPG")
+```
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE, include = TRUE)
+
+```{r, echo=FALSE, include=FALSE}
+knitr::opts_chunk$set(
+  echo = FALSE,
+  warning = FALSE,
+  message = FALSE,
+  error = FALSE,   # <- This hides error messages too
+  include = TRUE
+)
 library(tidyverse)
 library(dplyr)
 library(stringr)
@@ -26,15 +34,20 @@ library(prettydoc)
 library(hrbrthemes)
 library(tint)
 library(tufte)
+library(flexdashboard)
+
 
 
 dat <- read.csv("plate_reading_2.csv")
-```
-This is where we will take a look at the TC50 value of cancerous kidney cells from monkeys based off of different chemicals added. 
-The chemicals used were water, ethanol, and hydrogen peroxide. 
-Water was used to ensure that it wasn't only the diluting of media that was causing cell death. Diluting media with water causes cells to not have as much nutrients so there is some expected cell death. Methanol and Hydrogen peroxide are often used in the lab setting as sterilizing reagents, so we were curious to see what the effect on eukaryotic cells are. The standard which are the two first wells are to create a standard curve of "cell death" to compare the results to because the cell numbers within the ethanol and hydrogen peroxide all had 12,000 cells to see what the affect of the reagents were. 
-So let's take a look at the data! 
 
+```
+
+Introduction
+We will look at an MTT assay performed on COS-7 cells, which are cancerous monkey kidney cells, using different sterilization reagents. 
+The chemicals used were water, ethanol, and hydrogen peroxide. 
+Water was used to ensure that it wasn't only the diluting of media that was causing cell death. Diluting media with water causes cells to not have as much nutrients so there is some expected cell death. Ethanol and Hydrogen peroxide are often used in the lab setting as sterilizing reagents, so we were curious to see what the effect on eukaryotic cells are. The standard which are the two first wells are to create a standard curve of "cell death" to compare the results to because the cell numbers within the ethanol and hydrogen peroxide all had 12,000 cells to see what the affect of the reagents were. 
+So let's take a look at the data! 
+  
 
 ```{r}
 print(dat)
@@ -42,11 +55,11 @@ print(dat)
 
 
 
+
 Looking at this data it is a little messy so we need to clean it up in order to properly perform any type of analysis on it! So what are the steps of cleaning data, well here they are!!
-##Cleaning data!
-
-Cleaning data steps: 
-
+  
+  Cleaning data steps: 
+  
 1. Import 
 2. Clean
 3. Visualize
@@ -54,14 +67,21 @@ Cleaning data steps:
 5. Report 
 
 We have already imported our data, so let's go ahead and clean it!
-
+Cleaning data
 ```{r}
 library(tidyverse)
 library(broom)
 library(dplyr)
+library(bslib)
 
 dat <- read.csv("plate_reading_2.csv")
 names(dat)
+
+
+dat_1 <- dat %>%
+  pivot_longer(cols = starts_with("cell_count"),
+               names_to = "measurement",
+               values_to = "cell_count")
 
 dat_1 <- dat %>% 
   rename_with(~ sub("//.//d+$", "", .x)) %>%
@@ -95,33 +115,134 @@ dat_cleaned <- dat_3 %>%
 ```
 
 
-
-
-
-Here is the cleaned data in a very long table! 
+Now let us look at the data in a table and put them into models.
+Clean Data / Modeling
 ```{r}
-dat_cleaned %>% 
-  kable %>%
-  kable_classic_2(lightable_options = "hover")
+library(shinyjs)
 
+ui <- fluidPage(
+  useShinyjs(),
+  theme = bs_theme(bootswatch = "minty"),
+  titlePanel("Final Project: Cell Death Data"),
+  
+  tabsetPanel(
+    tabPanel("Collapsible Table",
+      actionButton("toggle_table", "Show/Hide Table"),
+      uiOutput("table_output")
+    ),
+    
+    tabPanel("Model Dashboard",
+      sidebarLayout(
+        sidebarPanel(
+          selectInput("model_choice", "Choose a Model:",
+                      choices = c("Model 1: concentration ~ absorbance" = "mod_1",
+                                  "Model 2: concentration ~ concentration * absorbance" = "mod_2",
+                                  "Model 3: cell_count ~ absorbance" = "mod_3"),
+                      selected = "mod_1"),
+          selectInput("reagent_filter", "Filter by Reagent:",
+                      choices = c("All", "Water", "Ethanol", "Hydrogen Peroxide"),
+                      selected = "All"),
+          checkboxInput("log_trendline", "Add Logarithmic Trendline", value = FALSE)
+        ),
+        
+        mainPanel(
+          tabsetPanel(
+            tabPanel("Model Summary", verbatimTextOutput("model_summary")),
+            tabPanel("Actual vs Predicted Plot", plotOutput("prediction_plot")),
+            tabPanel("Model Metrics", verbatimTextOutput("model_metrics"))
+          )
+        )
+      )
+    )
+  )
+)
+
+server <- function(input, output, session) {
+  
+  # Collapsible Table
+  output$table_output <- renderUI({
+    req(input$toggle_table)
+    if (input$toggle_table %% 2 == 1) {
+      DT::dataTableOutput("table")
+    }
+  })
+  
+  output$table <- DT::renderDataTable({
+    dat_cleaned
+  })
+  
+  # Models
+  mod_1 <- glm(concentration ~ absorbance, data = dat_cleaned)
+  mod_2 <- glm(concentration ~ concentration * absorbance, data = dat_cleaned)
+  mod_3 <- glm(cell_count ~ absorbance, data = dat_cleaned)
+  
+  model_lookup <- list(mod_1 = mod_1, mod_2 = mod_2, mod_3 = mod_3)
+  
+  selected_model <- reactive({
+    model_lookup[[input$model_choice]]
+  })
+  
+  output$model_summary <- renderPrint({
+    summary(selected_model())
+  })
+  
+  output$prediction_plot <- renderPlot({
+    model <- selected_model()
+    preds <- predict(model)
+    actual <- model$y
+    
+    ggplot(data.frame(actual = actual, predicted = preds),
+           aes(x = actual, y = predicted)) +
+      geom_point(alpha = 0.6, color = "#2c3e50") +
+      geom_abline(slope = 1, intercept = 0, linetype = "dashed", color = "red") +
+      labs(title = "Actual vs Predicted", x = "Actual", y = "Predicted") +
+      theme_minimal()
+  })
+  
+  output$model_metrics <- renderPrint({
+    model <- selected_model()
+    preds <- predict(model)
+    actual <- model$y
+    rmse <- sqrt(mean((actual - preds)^2))
+    r2 <- cor(actual, preds)^2
+    
+    cat("RMSE:", round(rmse, 3), "\n")
+    cat("R²:", round(r2, 3), "\n")
+  })
+}
+
+shinyApp(ui = ui, server = server)
 ```
 
-now that we cleaned the data up we can now visualize the data!
+After looking at these models let us compare them 
 
-#Visualize 
+
+
+Visualize 
 
 ```{r}
 dat_cleaned %>% 
-  ggplot(aes(x = absorbance, 
-             y = concentration, 
+  ggplot(aes(x = concentration, 
+             y = absorbance, 
              color = reagent)) + 
   geom_point() +
   facet_wrap(~reagent)
 ```
+Here is a visible picture of the results 
+```{r echo=FALSE,  out.width="20%", fig.align="center"}
+knitr::include_graphics("image0 - 2024-11-13T132831.463 (1).jpeg")
+```
 
 
-looking at these graphs we can see that 
+#Conclusion
+Looking at the image, there is a nice gradient of purple where the less of a reagent was used, the darker it was, which means that there are more cells present here because the mitochondria is converting formazan crystals to get that purple color. So as a visible cue the reagents kill off these cells.
+Looking at these graphs we can see that hydrogen peroxide will kill anything it touches. 
+The surprising thing is that ethanol and water follow the same trend of cell amounts. This could be because the ethanol wasn't concentrated enough, but we can contribute some of the cell death to the DMSO. 
+The modeling dashboard provides insight into how absorbance relates to both concentration and cell count, with model comparisons guiding which has better predictive power.
 
+Possible points of error could have been as we learned with our previous run to use parafilm to ensure that the ethanol isn’t going to evaporate off. Understanding that hydrogen peroxide is so strong, even at such low concentrations it killed off most cells so figuring out what we could do for another run. 
+If we were to run this experiment again, we would dilute the hydrogen peroxide even more to get it so dilute to where cells are able to survive. Rerunning this experiment would be a great idea for the purpose of reproducing results to ensure that we just didn’t get a one time number rather our results would become more reliable. Maybe adding another reagent, or running with different reagents over all. Seeing the effects of the caffeine for example on kidney cells or how some vitamins affect kidney cells. Maybe using a different cell line to see what the difference is in monkey kidney cells versus say a rabbit or a rat’s kidney cells. 
 
+  
 
 
