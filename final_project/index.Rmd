@@ -9,7 +9,6 @@ output:
     toc: true
     toc_float: true
     number_sections: true
-runtime: shiny
 ---
 ```{r  out.width="20%", fig.align="center"}
 knitr::include_graphics("IMG_0667.JPG")
