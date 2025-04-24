@@ -22,27 +22,6 @@ knitr::opts_chunk$set(
 ```
 
 
-```{r}
-getOption("repos")
-options(repos = c(CRAN = "https://cran.rstudio.com"))
-install.packages("shiny")
-install.packages("tidyverse")
-install.packages("rsconnect")
-install.packages("flexdashboard")
-
-```
-
-```{r}
-install.packages("rsconnect")
-library(rsconnect)
-options(repos = c(CRAN = "https://cran.r-project.org"))
-
-
-rsconnect::deployApp("index.Rmd")
-```
-
-
-
 ```{r  out.width="20%", fig.align="center"}
 knitr::include_graphics("IMG_0667.JPG")
 ```
@@ -71,7 +50,7 @@ dat <- read.csv("plate_reading_2.csv")
 
 ```
 
-## Introduction
+# Introduction
 We will look at an MTT assay performed on COS-7 cells, which are cancerous monkey kidney cells, using different sterilization reagents. 
 The chemicals used were water, ethanol, and hydrogen peroxide. 
 Water was used to ensure that it wasn't only the diluting of media that was causing cell death. Diluting media with water causes cells to not have as much nutrients so there is some expected cell death. Ethanol and Hydrogen peroxide are often used in the lab setting as sterilizing reagents, so we were curious to see what the effect on eukaryotic cells are. The standard which are the two first wells are to create a standard curve of "cell death" to compare the results to because the cell numbers within the ethanol and hydrogen peroxide all had 12,000 cells to see what the affect of the reagents were. 
@@ -98,7 +77,7 @@ Looking at this data it is a little messy so we need to clean it up in order to 
 We have already imported our data, so let's go ahead and clean it!
 
 
-## Cleaning data
+# Cleaning data
 
 ```{r}
 library(tidyverse)
@@ -144,19 +123,54 @@ dat_cleaned <- dat_3 %>%
          "absorbance", 
          "concentration")
 
-saveRDS(dat_cleaned, file = "dat_cleaned.rds")
 ```
 
 
 Now let us look at the data in a table and put them into models.
+# Cleaned Data
 
+<details>
+  <summary>Click to expand the cleaned data table</summary>
 
+```{r, echo=FALSE}
+library(DT)
+datatable(dat_cleaned, options = list(pageLength = 5, scrollX = TRUE))
+
+```
+# Model Summary and Diagnostics
+
+```{r}
+# Fit models
+mod1 <- lm(concentration ~ absorbance, data = dat_cleaned)
+mod2 <- lm(concentration ~ concentration * absorbance, data = dat_cleaned)
+mod3 <- lm(cell_count ~ absorbance, data = dat_cleaned)
+
+# Display summaries
+summary(mod1)
+```
 
 After looking at these models let us compare them 
 
+# Prediction Plot
+```{r}
+library(ggplot2)
+library(performance)
 
+compare_performance(mod1, mod2, mod3) %>% plot()
 
-## Visualize 
+preds <- predict(mod1)
+actual <- model.frame(mod1)[[1]]
+
+ggplot(data.frame(actual = actual, predicted = preds),
+       aes(x = actual, y = predicted)) +
+  geom_point(alpha = 0.6) +
+  geom_abline(slope = 1, intercept = 0, linetype = "dashed", color = "red") +
+  theme_minimal() +
+  labs(title = "Actual vs Predicted", x = "Actual", y = "Predicted")
+
+```
+
+# Visualize 
 
 ```{r}
 dat_cleaned %>% 
@@ -172,7 +186,7 @@ knitr::include_graphics("image0 - 2024-11-13T132831.463 (1).jpeg")
 ```
 
 
-## Conclusion
+# Conclusion
 Looking at the image, there is a nice gradient of purple where the less of a reagent was used, the darker it was, which means that there are more cells present here because the mitochondria is converting formazan crystals to get that purple color. So as a visible cue the reagents kill off these cells.
 Looking at these graphs we can see that hydrogen peroxide will kill anything it touches. 
 The surprising thing is that ethanol and water follow the same trend of cell amounts. This could be because the ethanol wasn't concentrated enough, but we can contribute some of the cell death to the DMSO. 
